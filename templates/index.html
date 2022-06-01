@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Drink Mixer</title>
+		<style>
+            body {
+                background-color: black;
+            }
+
+            h1 {
+                color: papayawhip;
+            }
+
+			.interItems {
+				text-align: center;
+			}
+			.interactiveButtons {
+				padding: 2em;
+				display: flex;
+			    justify-content: center;
+			    align-items: center;
+			    height: 500px;
+			}
+			.drink {
+				width: 11em;
+				height: 2.5em;
+                margin-bottom: 1em;
+                background-color: orangered;
+                font-family: Century, serif;
+                font-size: 2em;
+                outline-color: papayawhip;
+				transition: background-color 0.7s ease-in-out;
+			}
+			.drink:hover {
+				background-color: papayawhip;
+
+			}
+		</style>
+	</head>
+	<body>
+		<div class='interItems'>
+			<h1>Choose a drink from below</h1>
+			<div class='interactiveButtons'>
+				<form action='#' method='POST'>
+                    <button class='drink' onclick="ShirleyGinger()" name="SG" value="SG">Shirley Ginger</button>
+                    <br>
+					<button class='drink' onclick="VirginCucumberGimlet()" name="VCG" value="VCG">Virgin Cucumber Gimlet</button>
+                    <br>
+                    <button class='drink' onclick="Lemonade()" name="LEM" value="LEM">Lemonade</button>
+                    <br>
+                    <button class='drink' onclick="StrawberryLemonade()" name="SL" value="SL">Strawberry Lemonade</button>
+				</form>
+			</div>
+			<input type="datetime-local" id="meeting-time"
+				   name="meeting-time" value=""
+				   min="2022-05-18T00:00" max="2023-06-14T00:00">
+			<button class='disconnectBtton' onclick="disconnect()" name="dis" value="dis">disconnect</button>
+		</div>
+	</body>
+</html>

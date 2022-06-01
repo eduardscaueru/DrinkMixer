@@ -9,11 +9,11 @@
 #define TRIG_PIN PD6
 #define ECHO_PIN PD7
 #define WATER_PIN PB5
-#define VODKA_PIN PB4
-#define JUICE_PIN PB3
-#define GIN_PIN PB2
+#define LEMON_PIN PB4
+#define BERRIES_PIN PB3
+#define LIME_PIN PB2
 #define WATER_SENSOR A5
-#define VODKA_SENSOR A4
+#define LEMON_SENSOR A4
 
 Adafruit_PCD8544 display = Adafruit_PCD8544(8, 9, A2, A1, A0);
 
@@ -40,17 +40,17 @@ int running = 0;
 int currentDrink = 0;
 bool reset = false;
 
-const int numOfScreens = 4;
+const int numOfScreens = 5;
 volatile int currentScreen = 0;
-String screens[numOfScreens][2] = {{"Press a button", "to continue..."},
-{"Make Drink", "Show Status"}, {"Water Vodka", "Juice Gin"},
-{"Hold OK for", " "}};
+String screens[numOfScreens][2] = {{"Press SELECT", "to continue..."},
+{"Make Drink", "Show Status"}, {"Water Lemon", "Berries Lime"},
+{"Hold OK for", " "}, {"Lemonade Berry-Lemonade", "Mojito Wild"}};
 volatile int screenSelection[numOfScreens][4];
 volatile bool changeScreen = true;
 volatile bool buttonChanged = true;
 bool leaveScreen = false;
 volatile bool pumpOn = false;
-int pumps[] = {WATER_PIN, VODKA_PIN, JUICE_PIN, GIN_PIN};
+int pumps[] = {WATER_PIN, LEMON_PIN, BERRIES_PIN, LIME_PIN};
 
 unsigned long lastDebounceTime = 0;
 unsigned long debounceDelay = 50;
@@ -59,6 +59,7 @@ int buttonState;
 unsigned long lastDebounceTime2 = 0;
 int lastButtonState2 = 0;
 int buttonState2;
+volatile int makeCocktail;
 
 void setup() {
   // put your setup code here, to run once:
@@ -86,7 +87,10 @@ void setup() {
 
   screenSelection[1][0] = 1;
   screenSelection[2][0] = 1;
+  screenSelection[3][0] = 1;
 
+  makeCocktail = -1;
+  
   // Buttons setup
   //pinMode(OK_BTN, INPUT_PULLUP);
   DDRD &= ~(1 << OK_BTN);
@@ -113,20 +117,20 @@ void setup() {
   //digitalWrite(WATER_PIN, HIGH);
   PORTB |= (1 << WATER_PIN);
 
-  //pinMode(VODKA_PIN, OUTPUT);
-  DDRB |= (1 << VODKA_PIN);
-  //digitalWrite(VODKA_PIN, HIGH);
-  PORTB |= (1 << VODKA_PIN);
+  //pinMode(LEMON_PIN, OUTPUT);
+  DDRB |= (1 << LEMON_PIN);
+  //digitalWrite(LEMON_PIN, HIGH);
+  PORTB |= (1 << LEMON_PIN);
 
-  //pinMode(JUICE_PIN, OUTPUT);
-  DDRB |= (1 << JUICE_PIN);
-  //digitalWrite(JUICE_PIN, HIGH);
-  PORTB |= (1 << JUICE_PIN);
+  //pinMode(BERRIES_PIN, OUTPUT);
+  DDRB |= (1 << BERRIES_PIN);
+  //digitalWrite(BERRIES_PIN, HIGH);
+  PORTB |= (1 << BERRIES_PIN);
 
-  //pinMode(GIN_PIN, OUTPUT);
-  DDRB |= (1 << GIN_PIN);
-  //digitalWrite(GIN_PIN, HIGH);
-  PORTB |= (1 << GIN_PIN);
+  //pinMode(LIME_PIN, OUTPUT);
+  DDRB |= (1 << LIME_PIN);
+  //digitalWrite(LIME_PIN, HIGH);
+  PORTB |= (1 << LIME_PIN);
 
   // External Interrupts setup for buttons BACK_BTN and NEXT_BTN
   EICRA |= (1 << ISC11) | (1 << ISC10);
@@ -213,13 +217,23 @@ ISR(PCINT2_vect) {
           if (screenSelection[1][0] == 1) {
             currentScreen++;
             changeScreen = true;
-          } else {
+          } else if (screenSelection[1][1] == 1) {
             currentScreen = 4;
+            changeScreen = true;
+          } else {
+            currentScreen = 5;
             changeScreen = true;
           }
         } else if (currentScreen == 2) {
           currentScreen++;
           changeScreen = true;
+        } else if (currentScreen == 5) {
+          for (int i = 0; i < 4; i++) {
+            if (screenSelection[3][i] == 1) {
+              makeCocktail = i;
+              break;
+            }
+          }
         } else {
           //Serial.println("3");
         }
@@ -238,6 +252,8 @@ void loop() {
     changeScreen = false;
   }
 
+  checkIfCocktail();
+
   checkForGlass();
 
   readSelectButton();
@@ -247,36 +263,169 @@ void loop() {
   readHoldButton();
 }
 
+void checkIfCocktail() {
+  if (currentScreen == 5) {
+    if (makeCocktail == 0) {
+      makeLemonade();
+    } else if (makeCocktail == 1) {
+      makeBerryLemonade();
+    } else if (makeCocktail == 2) {
+      makeMojito();
+    } else if (makeCocktail == 3) {
+      makeWild();
+    }
+    
+    makeCocktail = -1;
+  }
+}
+
+void makeLemonade() {
+  display.clearDisplay();
+  display.setTextColor(BLACK, WHITE);
+  display.setCursor(0, 0);
+  display.print("Making");
+  display.setCursor(0, 20);
+  display.print("Lemonade ...");
+  display.display();
+  changeScreen = true;
+    
+  pumpOn = true;
+  //cli();
+  //digitalWrite(pumps[0], LOW);
+  PORTB &= ~(1 << WATER_PIN);
+  PORTB &= ~(1 << LEMON_PIN);
+
+  delay(2000);
+  PORTB |= (1 << LEMON_PIN);
+
+  delay(2000);
+  PORTB |= (1 << WATER_PIN);
+  pumpOn = false;
+  //sei();
+}
+
+void makeBerryLemonade() {
+  display.clearDisplay();
+  display.setTextColor(BLACK, WHITE);
+  display.setCursor(0, 0);
+  display.print("Making");
+  display.setCursor(0, 20);
+  display.print("Berry Lemonade ...");
+  display.display();
+  changeScreen = true;
+  
+  pumpOn = true;
+  //cli();
+  //digitalWrite(pumps[0], LOW);
+  PORTB &= ~(1 << WATER_PIN);
+  PORTB &= ~(1 << LEMON_PIN);
+  PORTB &= ~(1 << BERRIES_PIN);
+
+  delay(2000);
+  PORTB |= (1 << BERRIES_PIN);
+
+  delay(1000);
+  PORTB |= (1 << WATER_PIN);
+  PORTB |= (1 << LEMON_PIN);
+  
+  pumpOn = false;
+  //sei();
+}
+
+void makeMojito() {
+  display.clearDisplay();
+  display.setTextColor(BLACK, WHITE);
+  display.setCursor(0, 0);
+  display.print("Making");
+  display.setCursor(0, 20);
+  display.print("Mojito ...");
+  display.display();
+  changeScreen = true;
+  
+  pumpOn = true;
+  //cli();
+  //digitalWrite(pumps[0], LOW);
+  PORTB &= ~(1 << WATER_PIN);
+  PORTB &= ~(1 << LIME_PIN);
+
+  delay(2000);
+  PORTB |= (1 << LIME_PIN);
+
+  delay(2000);
+  PORTB |= (1 << WATER_PIN);
+  pumpOn = false;
+  //sei();
+}
+
+void makeWild() {
+  display.clearDisplay();
+  display.setTextColor(BLACK, WHITE);
+  display.setCursor(0, 0);
+  display.print("Making");
+  display.setCursor(0, 20);
+  display.print("Wild ...");
+  display.display();
+  changeScreen = true;
+  
+  pumpOn = true;
+  //cli();
+  //digitalWrite(pumps[0], LOW);
+  PORTB &= ~(1 << WATER_PIN);
+  PORTB &= ~(1 << LEMON_PIN);
+  PORTB &= ~(1 << BERRIES_PIN);
+  PORTB &= ~(1 << LIME_PIN);
+
+  delay(2000);
+
+  //digitalWrite(pumps[0], HIGH);
+  PORTB |= (1 << WATER_PIN);
+  PORTB |= (1 << LEMON_PIN);
+  PORTB |= (1 << BERRIES_PIN);
+  PORTB |= (1 << LIME_PIN);
+  pumpOn = false;
+  //sei();
+}
+
 void readSelectButton() {
   int reading = PIND & (1 << NEXT_BTN);
   if (reading != lastButtonState2) {
-    // reset the debouncing timer
     lastDebounceTime2 = millis();
   }
   if ((millis() - lastDebounceTime2) > debounceDelay) {
-    // whatever the reading is at, it's been there for longer than the debounce
-    // delay, so take it as the actual current state:
 
     // if the button state has changed:
     if (reading != buttonState2) {
       buttonState2 = reading;
 
-      // only toggle the LED if the new button state is HIGH
       if (buttonState2 != 0) {
         if (currentScreen == 1) {
           if (screenSelection[1][0] == 1) {
             screenSelection[1][0] = 0;
             screenSelection[1][1] = 1;
+            screenSelection[1][2] = 0;
           }
-          else {
+          else if (screenSelection[1][1] == 1) {
+            screenSelection[1][0] = 0;
+            screenSelection[1][1] = 0;
+            screenSelection[1][2] = 1;
+          } else {
             screenSelection[1][0] = 1;
             screenSelection[1][1] = 0;
+            screenSelection[1][2] = 0;
           }
         } else if (currentScreen == 2) {
           for (int i = 0; i < 4; i++) {
             if (screenSelection[2][i] == 1) {
               screenSelection[2][i] = 0;
               screenSelection[2][(i + 1) % 4] = 1;
+              break;
+            }
+          }
+        } else if (currentScreen == 5) {
+          for (int i = 0; i < 4; i++) {
+            if (screenSelection[3][i] == 1) {
+              screenSelection[3][i] = 0;
+              screenSelection[3][(i + 1) % 4] = 1;
               break;
             }
           }
@@ -360,7 +509,7 @@ void readBackButton() {
       // only toggle the LED if the new button state is HIGH
       if (buttonState != 0) {
 
-        if (currentScreen == 4) {
+        if (currentScreen == 4 || currentScreen == 5) {
           currentScreen = 1;
         } else {
           currentScreen--;
@@ -386,13 +535,29 @@ void printScreen() {
       display.setTextColor(BLACK, WHITE);
       display.setCursor(0, 20);
       display.print(screens[currentScreen][1]);
-    } else {
+      display.setTextColor(BLACK, WHITE);
+      display.setCursor(0, 40);
+      display.print("Cocktails");
+    } else if (screenSelection[1][1] == 1) {
       display.setTextColor(BLACK, WHITE);
       display.setCursor(0, 0);
       display.print(screens[currentScreen][0]);
       display.setTextColor(WHITE, BLACK);
       display.setCursor(0, 20);
       display.print(screens[currentScreen][1]);
+      display.setTextColor(BLACK, WHITE);
+      display.setCursor(0, 40);
+      display.print("Cocktails");
+    } else {
+      display.setTextColor(BLACK, WHITE);
+      display.setCursor(0, 0);
+      display.print(screens[currentScreen][0]);
+      display.setTextColor(BLACK, WHITE);
+      display.setCursor(0, 20);
+      display.print(screens[currentScreen][1]);
+      display.setTextColor(WHITE, BLACK);
+      display.setCursor(0, 40);
+      display.print("Cocktails");
     }
     
     display.display();
@@ -484,7 +649,7 @@ void printScreen() {
     String d4 = getValue(screens[2][1], ' ', 1);
 
     String waterLevel = getLevel(WATER_SENSOR);
-    String vodkaLevel = getLevel(VODKA_SENSOR);
+    String LEMONLevel = getLevel(LEMON_SENSOR);
 
     display.setTextColor(BLACK, WHITE);
     display.setCursor(0, 0);
@@ -497,7 +662,7 @@ void printScreen() {
     display.print(d2);
     display.setTextColor(WHITE, BLACK);
     display.setCursor(45, 10);
-    display.print(vodkaLevel);
+    display.print(LEMONLevel);
     display.setTextColor(BLACK, WHITE);
     display.setCursor(0, 20);
     display.print(d3);
@@ -510,6 +675,61 @@ void printScreen() {
     display.setTextColor(WHITE, BLACK);
     display.setCursor(45, 30);
     display.print(waterLevel);
+
+    display.display();
+  } else if (currentScreen == 5) {
+    String d1 = getValue(screens[4][0], ' ', 0);
+    String d2 = getValue(screens[4][0], ' ', 1);
+    String d3 = getValue(screens[4][1], ' ', 0);
+    String d4 = getValue(screens[4][1], ' ', 1);
+
+    if (screenSelection[3][0] == 1) {
+      display.setTextColor(WHITE, BLACK);
+      display.setCursor(0, 0);
+      display.print(d1);
+      display.setTextColor(BLACK, WHITE);
+      display.setCursor(0, 10);
+      display.print(d2);
+      display.setCursor(0, 20);
+      display.print(d3);
+      display.setCursor(0, 30);
+      display.print(d4);
+    } else if (screenSelection[3][1] == 1) {
+      display.setTextColor(BLACK, WHITE);
+      display.setCursor(0, 0);
+      display.print(d1);
+      display.setTextColor(WHITE, BLACK);
+      display.setCursor(0, 10);
+      display.print(d2);
+      display.setTextColor(BLACK, WHITE);
+      display.setCursor(0, 20);
+      display.print(d3);
+      display.setCursor(0, 30);
+      display.print(d4);
+    } else if (screenSelection[3][2] == 1) {
+      display.setTextColor(BLACK, WHITE);
+      display.setCursor(0, 0);
+      display.print(d1);
+      display.setCursor(0, 10);
+      display.print(d2);
+      display.setTextColor(WHITE, BLACK);
+      display.setCursor(0, 20);
+      display.print(d3);
+      display.setTextColor(BLACK, WHITE);
+      display.setCursor(0, 30);
+      display.print(d4);
+    } else if (screenSelection[3][3] == 1) {
+      display.setTextColor(BLACK, WHITE);
+      display.setCursor(0, 0);
+      display.print(d1);
+      display.setCursor(0, 10);
+      display.print(d2);
+      display.setCursor(0, 20);
+      display.print(d3);
+      display.setTextColor(WHITE, BLACK);
+      display.setCursor(0, 30);
+      display.print(d4);
+    }
 
     display.display();
   } else {
